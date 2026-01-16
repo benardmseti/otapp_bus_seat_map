@@ -17,9 +17,12 @@ A flexible bus seat map widget for Flutter. Designed for bus booking apps using 
 
 ```yaml
 dependencies:
-  otapp_bus_seat_map:
-    git:
-      url: https://github.com/benardmseti/otapp_bus_seat_map.git
+  otapp_bus_seat_map: ^0.1.0
+```
+
+Or run:
+```bash
+flutter pub add otapp_bus_seat_map
 ```
 
 ---
