@@ -6,9 +6,9 @@ A flexible bus seat map widget for Flutter. Designed for bus booking apps using 
 
 - Works directly with **Otapp Services API** response format
 - Manual setup option for custom implementations
+- **100% customizable widgets** - bring your own seat, aisle, and special element designs
 - Automatic aisle detection
 - Support for special elements (doors, toilets, stairs)
-- Customizable seat appearance
 - VIP/category support
 - Seat status management (available, booked, selected, processing)
 - InteractiveViewer support for zoom/pan
@@ -17,7 +17,7 @@ A flexible bus seat map widget for Flutter. Designed for bus booking apps using 
 
 ```yaml
 dependencies:
-  otapp_bus_seat_map: ^0.1.0
+  otapp_bus_seat_map: ^0.1.1
 ```
 
 Or run:
@@ -153,38 +153,96 @@ final layout = SeatLayout.fromCsvRows(
 
 ---
 
-## Customization
+## Full Widget Customization
 
-### Custom Seat Widget
+**Every widget is customizable.** Use the default widgets or bring your own designs.
+
+### Available Builders
+
+| Builder | Purpose | Receives |
+|---------|---------|----------|
+| `seatBuilder` | Custom seat design | `context`, `seat`, `isSelected` |
+| `aisleBuilder` | Custom aisle/empty space | `context`, `element` |
+| `specialBuilder` | Custom door/toilet/stairs | `context`, `element` |
+| `rowLabelBuilder` | Custom row labels | `context`, `rowIndex`, `row` |
+
+### Example: Fully Custom Seat Map
 
 ```dart
 SeatMapWidget(
   layout: layout,
+  selectedSeats: selectedSeats,
+  onSeatTap: (seat) => handleSelection(seat),
+
+  // Your custom seat widget
   seatBuilder: (context, seat, isSelected) {
     return Container(
       width: 50,
       height: 50,
       decoration: BoxDecoration(
-        color: isSelected ? Colors.blue : Colors.white,
+        color: _getSeatColor(seat, isSelected),
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
       ),
-      child: Center(child: Text(seat.label ?? '')),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (seat.category == 'VIP') Icon(Icons.star, size: 12),
+          Text(seat.label ?? '', style: TextStyle(fontWeight: FontWeight.bold)),
+          if (seat.price != null) Text('${seat.price}', style: TextStyle(fontSize: 8)),
+        ],
+      ),
+    );
+  },
+
+  // Your custom aisle widget
+  aisleBuilder: (context, element) {
+    return Container(
+      width: 50,
+      height: 50,
+      child: Center(
+        child: RotatedBox(
+          quarterTurns: 1,
+          child: Text('AISLE', style: TextStyle(color: Colors.grey, fontSize: 8)),
+        ),
+      ),
+    );
+  },
+
+  // Your custom special elements
+  specialBuilder: (context, element) {
+    switch (element.type) {
+      case SeatElementType.door:
+        return MyCustomDoorWidget();
+      case SeatElementType.toilet:
+        return MyCustomToiletWidget();
+      case SeatElementType.stairs:
+        return MyCustomStairsWidget();
+      default:
+        return DefaultSpecialWidget(element: element);
+    }
+  },
+
+  // Your custom row labels
+  rowLabelBuilder: (context, rowIndex, row) {
+    return Container(
+      width: 30,
+      child: Center(child: Text('R${rowIndex + 1}')),
     );
   },
 )
 ```
 
-### Custom Special Elements
+### Using Default Widgets (Optional)
+
+If you don't provide custom builders, the package uses sensible defaults:
 
 ```dart
+// Minimal setup - uses all default widgets
 SeatMapWidget(
   layout: layout,
-  specialBuilder: (context, element) {
-    if (element.type == SeatElementType.door) {
-      return MyCustomDoorWidget();
-    }
-    return DefaultSpecialWidget(element: element);
-  },
+  selectedSeats: selectedSeats,
+  onSeatTap: (seat) => handleSelection(seat),
 )
 ```
 
@@ -203,6 +261,7 @@ SeatMapController(
       layout: layout,
       selectedSeats: selectedSeats,
       onSeatTap: onSeatTap,
+      // Add your custom builders here too
     );
   },
 )
