@@ -22,6 +22,8 @@ class DefaultSpecialWidget extends StatelessWidget {
         return Icons.wc_outlined;
       case SeatElementType.stairs:
         return Icons.stairs_outlined;
+      case SeatElementType.driver:
+        return Icons.airline_seat_recline_normal;
       case SeatElementType.custom:
         return Icons.square_outlined;
       default:
@@ -37,6 +39,8 @@ class DefaultSpecialWidget extends StatelessWidget {
         return 'WC';
       case SeatElementType.stairs:
         return 'Stairs';
+      case SeatElementType.driver:
+        return 'Driver';
       case SeatElementType.custom:
         return element.rawCode;
       default:
@@ -52,6 +56,8 @@ class DefaultSpecialWidget extends StatelessWidget {
         return Colors.lightBlue.shade50;
       case SeatElementType.stairs:
         return Colors.amber.shade50;
+      case SeatElementType.driver:
+        return Colors.blue.shade700;
       case SeatElementType.custom:
         return Colors.grey.shade100;
       default:
@@ -67,6 +73,8 @@ class DefaultSpecialWidget extends StatelessWidget {
         return Colors.lightBlue.shade200;
       case SeatElementType.stairs:
         return Colors.amber.shade200;
+      case SeatElementType.driver:
+        return Colors.blue.shade900;
       case SeatElementType.custom:
         return Colors.grey.shade300;
       default:
@@ -82,6 +90,8 @@ class DefaultSpecialWidget extends StatelessWidget {
         return Colors.lightBlue.shade700;
       case SeatElementType.stairs:
         return Colors.amber.shade700;
+      case SeatElementType.driver:
+        return Colors.white;
       case SeatElementType.custom:
         return Colors.grey.shade700;
       default:

@@ -328,6 +328,293 @@ class SeatLayout {
     return withUpdatedStatuses({seatId: status});
   }
 
+  /// Create a SeatLayout from full Otapp Services API response
+  ///
+  /// This parses the complete API response including:
+  /// - lower_seat_map / upper_seat_map
+  /// - available_seats, process_seats
+  /// - seat_types with fares
+  /// - is_right_hand_drive (for driver positioning)
+  /// - fare (default fare)
+  ///
+  /// Example:
+  /// ```dart
+  /// final layout = SeatLayout.fromApiResponse(apiResponse);
+  /// ```
+  factory SeatLayout.fromApiResponse(
+    Map<String, dynamic> apiResponse, {
+    bool includeDriveRow = true,
+    SeatLayoutConfig? baseConfig,
+  }) {
+    // Extract data from API response
+    final lowerSeatMap = apiResponse['lower_seat_map'] as List? ?? [];
+    final availableSeats = apiResponse['available_seats']?.toString() ?? '';
+    final processSeats = apiResponse['process_seats']?.toString() ?? '';
+    final reserveHoldSeats = apiResponse['reserve_hold_seats']?.toString() ?? '';
+    final seatTypes = apiResponse['seat_types'] as List? ?? [];
+    final defaultFare = apiResponse['fare'] as List? ?? [];
+    final isRightHandDrive = _parseBool(apiResponse['is_right_hand_drive']);
+
+    // Parse default price
+    double defaultPrice = 0;
+    if (defaultFare.isNotEmpty && defaultFare[0]['fare'] != null) {
+      defaultPrice = _parsePrice(defaultFare[0]['fare']);
+    }
+
+    // Build seat type lookup: seatCode -> {category, price}
+    final Map<String, Map<String, dynamic>> seatTypeMap = {};
+    for (final seatType in seatTypes) {
+      final typeName = seatType['seat_type_name']?.toString() ?? '';
+      final seats = seatType['seats']?.toString() ?? '';
+      final fares = seatType['fare'] as List? ?? [];
+
+      double typePrice = defaultPrice;
+      if (fares.isNotEmpty && fares[0]['fare'] != null) {
+        typePrice = _parsePrice(fares[0]['fare']);
+      }
+
+      for (final seatCode in seats.split(',')) {
+        final code = seatCode.trim();
+        if (code.isNotEmpty) {
+          seatTypeMap[code] = {
+            'category': typeName,
+            'price': typePrice,
+          };
+        }
+      }
+    }
+
+    // Parse row strings from lower_seat_map
+    final List<String> rowStrings = [];
+    for (final item in lowerSeatMap) {
+      if (item is Map) {
+        final value = item.values.first?.toString() ?? '';
+        if (value.isNotEmpty && value != 'null') {
+          rowStrings.add(value);
+        }
+      }
+    }
+
+    // Determine maxCols from rows
+    int maxCols = 0;
+    for (final rowStr in rowStrings) {
+      final cols = rowStr.split(',').length;
+      if (cols > maxCols) maxCols = cols;
+    }
+
+    // Create config with price/category resolvers
+    final config = SeatLayoutConfig(
+      emptyMarkers: baseConfig?.emptyMarkers ?? const {'0', ''},
+      doorMarker: baseConfig?.doorMarker ?? '@',
+      toiletMarker: baseConfig?.toiletMarker ?? '*',
+      stairsMarker: baseConfig?.stairsMarker ?? '#',
+      autoDetectAisle: baseConfig?.autoDetectAisle ?? true,
+      defaultPrice: defaultPrice,
+      labelExtractor: baseConfig?.labelExtractor ?? (code) {
+        final parts = code.split('-');
+        return parts.length > 1 ? parts.last : code;
+      },
+      categoryResolver: (code, metadata) {
+        return seatTypeMap[code]?['category'];
+      },
+      priceResolver: (code, category, metadata) {
+        return seatTypeMap[code]?['price'] ?? defaultPrice;
+      },
+    );
+
+    // Build seat statuses
+    final Map<String, SeatStatus> statuses = {};
+
+    // All seats in available_seats are available
+    for (final seat in availableSeats.split(',')) {
+      final code = seat.trim();
+      if (code.isNotEmpty) {
+        statuses[code] = SeatStatus.available;
+      }
+    }
+
+    // Process seats override
+    for (final seat in processSeats.split(',')) {
+      final code = seat.trim();
+      if (code.isNotEmpty) {
+        statuses[code] = SeatStatus.processing;
+      }
+    }
+
+    // Reserve hold seats are blocked
+    for (final seat in reserveHoldSeats.split(',')) {
+      final code = seat.trim();
+      if (code.isNotEmpty) {
+        statuses[code] = SeatStatus.blocked;
+      }
+    }
+
+    // Add driver row if requested
+    List<String> finalRowStrings = rowStrings;
+    if (includeDriveRow && maxCols > 0) {
+      // Create driver row: empty except for driver position
+      final List<String> driverRowCodes = List.filled(maxCols, '0');
+      if (isRightHandDrive) {
+        driverRowCodes[maxCols - 1] = 'D'; // Driver on right
+      } else {
+        driverRowCodes[0] = 'D'; // Driver on left
+      }
+      finalRowStrings = [driverRowCodes.join(','), ...rowStrings];
+    }
+
+    // Use the base fromCsvRows but with our custom config and statuses
+    final cfg = config;
+
+    // Parse all rows into raw codes
+    final List<List<String>> rawParsed = [];
+    maxCols = 0;
+
+    for (final rowStr in finalRowStrings) {
+      if (rowStr.trim().isEmpty) continue;
+      final codes = rowStr.split(cfg.delimiter);
+      rawParsed.add(codes);
+      if (codes.length > maxCols) maxCols = codes.length;
+    }
+
+    // Detect aisle columns
+    final Set<int> aisleColumns = {};
+    if (cfg.autoDetectAisle && rawParsed.isNotEmpty) {
+      for (int col = 0; col < maxCols; col++) {
+        bool isAisle = true;
+        int emptyCount = 0;
+        int totalRows = 0;
+
+        for (final row in rawParsed) {
+          if (col >= row.length) continue;
+          totalRows++;
+          final code = row[col].trim();
+
+          if (cfg.emptyMarkers.contains(code)) {
+            emptyCount++;
+          } else if (!cfg.isSpecial(code) && code != 'D') {
+            isAisle = false;
+            break;
+          }
+        }
+
+        if (isAisle && emptyCount > totalRows * 0.5) {
+          aisleColumns.add(col);
+        }
+      }
+    }
+
+    // Calculate left/right seat counts
+    int leftCount = 0;
+    int rightCount = 0;
+    if (aisleColumns.isNotEmpty) {
+      final firstAisle = aisleColumns.reduce((a, b) => a < b ? a : b);
+      leftCount = firstAisle;
+      rightCount = maxCols - firstAisle - aisleColumns.length;
+    } else {
+      leftCount = maxCols;
+    }
+
+    // Convert raw codes to SeatElements
+    final List<List<SeatElement>> rows = [];
+    int totalSeats = 0;
+
+    for (int rowIdx = 0; rowIdx < rawParsed.length; rowIdx++) {
+      final rawRow = rawParsed[rowIdx];
+      final List<SeatElement> elementRow = [];
+
+      for (int colIdx = 0; colIdx < maxCols; colIdx++) {
+        final code = colIdx < rawRow.length ? rawRow[colIdx].trim() : '';
+        final isAisleCol = aisleColumns.contains(colIdx);
+
+        SeatElementType type;
+        if (code == 'D') {
+          type = SeatElementType.driver;
+        } else if (isAisleCol && cfg.emptyMarkers.contains(code)) {
+          type = SeatElementType.aisle;
+        } else {
+          type = cfg.getElementType(code);
+        }
+
+        final isSeat = type == SeatElementType.seat;
+        if (isSeat) totalSeats++;
+
+        String? category;
+        double? price;
+
+        if (isSeat) {
+          category = seatTypeMap[code]?['category'];
+          price = seatTypeMap[code]?['price'] ?? defaultPrice;
+        }
+
+        // Determine status - if not in available list and is a seat, it's booked
+        SeatStatus status = SeatStatus.available;
+        if (isSeat) {
+          if (statuses.containsKey(code)) {
+            status = statuses[code]!;
+          } else {
+            // Not in available list = booked
+            status = SeatStatus.booked;
+          }
+        }
+
+        final element = SeatElement(
+          id: isSeat ? code : null,
+          type: type,
+          status: status,
+          rowIndex: rowIdx,
+          columnIndex: colIdx,
+          label: isSeat ? cfg.getLabel(code) : null,
+          price: price,
+          category: category,
+          rawCode: code,
+        );
+
+        elementRow.add(element);
+      }
+
+      // Pad row to maxCols for consistent rendering
+      while (elementRow.length < maxCols) {
+        elementRow.add(SeatElement(
+          type: SeatElementType.empty,
+          rowIndex: rowIdx,
+          columnIndex: elementRow.length,
+          rawCode: '',
+        ));
+      }
+
+      rows.add(elementRow);
+    }
+
+    return SeatLayout._(
+      rows: rows,
+      config: cfg,
+      maxColumns: maxCols,
+      aisleColumns: aisleColumns,
+      leftSideCount: leftCount,
+      rightSideCount: rightCount,
+      totalSeats: totalSeats,
+      rawRows: finalRowStrings,
+    );
+  }
+
+  static bool _parseBool(dynamic value) {
+    if (value == null) return false;
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) return value == '1' || value.toLowerCase() == 'true';
+    return false;
+  }
+
+  static double _parsePrice(dynamic price) {
+    if (price == null) return 0;
+    try {
+      final cleaned = price.toString().replaceAll(',', '').replaceAll(' ', '');
+      return double.parse(cleaned);
+    } catch (e) {
+      return 0;
+    }
+  }
+
   @override
   String toString() {
     return 'SeatLayout(rows: ${rows.length}, cols: $maxColumns, seats: $totalSeats, aisles: $aisleColumns)';

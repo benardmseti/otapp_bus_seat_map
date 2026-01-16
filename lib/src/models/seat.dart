@@ -20,6 +20,9 @@ enum SeatElementType {
   /// A stairs element (for double-decker)
   stairs,
 
+  /// Driver position
+  driver,
+
   /// A custom special element
   custom,
 }

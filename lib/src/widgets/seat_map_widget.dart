@@ -149,6 +149,7 @@ class SeatMapWidget extends StatelessWidget {
       case SeatElementType.door:
       case SeatElementType.toilet:
       case SeatElementType.stairs:
+      case SeatElementType.driver:
       case SeatElementType.custom:
         if (specialBuilder != null) {
           return specialBuilder!(context, element);
