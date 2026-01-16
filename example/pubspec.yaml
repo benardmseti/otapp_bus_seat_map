@@ -1,0 +1,21 @@
+name: otapp_bus_seat_map_example
+description: Example app demonstrating otapp_bus_seat_map package
+
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  otapp_bus_seat_map:
+    path: ../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
