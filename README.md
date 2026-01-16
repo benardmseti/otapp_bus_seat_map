@@ -17,7 +17,7 @@ A flexible bus seat map widget for Flutter. Designed for bus booking apps using 
 
 ```yaml
 dependencies:
-  otapp_bus_seat_map: ^0.1.1
+  otapp_bus_seat_map: ^0.1.2
 ```
 
 Or run:
