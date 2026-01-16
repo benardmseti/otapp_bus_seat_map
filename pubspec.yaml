@@ -1,5 +1,5 @@
 name: otapp_bus_seat_map
-description: A flexible, customizable seat map widget for Flutter. Perfect for bus, cinema, theater, and event seat selection.
+description: A flexible bus seat map widget for Flutter. Designed for bus booking apps using Otapp Services API.
 version: 0.1.0
 homepage: https://github.com/benardmseti/otapp_bus_seat_map
 repository: https://github.com/benardmseti/otapp_bus_seat_map

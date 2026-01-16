@@ -1,10 +1,10 @@
 {
   "roots": [
-    "flutter_seat_map"
+    "otapp_bus_seat_map"
   ],
   "packages": [
     {
-      "name": "flutter_seat_map",
+      "name": "otapp_bus_seat_map",
       "version": "0.1.0",
       "dependencies": [
         "flutter"

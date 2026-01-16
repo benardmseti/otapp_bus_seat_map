@@ -50,12 +50,6 @@
       "languageVersion": "3.1"
     },
     {
-      "name": "flutter_seat_map",
-      "rootUri": "../../",
-      "packageUri": "lib/",
-      "languageVersion": "3.0"
-    },
-    {
       "name": "flutter_test",
       "rootUri": "file:///Users/benard/Developer/flutter/packages/flutter_test",
       "packageUri": "lib/",
@@ -102,6 +96,12 @@
       "rootUri": "file:///Users/benard/.pub-cache/hosted/pub.dev/meta-1.17.0",
       "packageUri": "lib/",
       "languageVersion": "3.5"
+    },
+    {
+      "name": "otapp_bus_seat_map",
+      "rootUri": "../../",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
     },
     {
       "name": "path",
@@ -164,7 +164,7 @@
       "languageVersion": "3.5"
     },
     {
-      "name": "flutter_seat_map_example",
+      "name": "otapp_bus_seat_map_example",
       "rootUri": "../",
       "packageUri": "lib/",
       "languageVersion": "3.0"
