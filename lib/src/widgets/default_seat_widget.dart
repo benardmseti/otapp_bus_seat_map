@@ -15,6 +15,10 @@ class DefaultSeatWidget extends StatelessWidget {
   final Color? processingColor;
   final Color? blockedColor;
 
+  /// VIP seat colors (overrides availableColor for VIP seats)
+  final Color? vipAvailableColor;
+  final Color? vipBorderColor;
+
   /// Border radius
   final double borderRadius;
 
@@ -35,6 +39,8 @@ class DefaultSeatWidget extends StatelessWidget {
     this.bookedColor,
     this.processingColor,
     this.blockedColor,
+    this.vipAvailableColor,
+    this.vipBorderColor,
     this.borderRadius = 8,
     this.showLabel = true,
     this.showCategory = true,
@@ -51,7 +57,7 @@ class DefaultSeatWidget extends StatelessWidget {
       case SeatStatus.available:
         // VIP seats get a distinct color when available
         if (isVipSeat) {
-          return availableColor ?? Colors.amber.shade100;
+          return vipAvailableColor ?? Colors.amber.shade100;
         }
         return availableColor ?? Colors.white;
       case SeatStatus.booked:
@@ -101,7 +107,7 @@ class DefaultSeatWidget extends StatelessWidget {
     if (isSelected) {
       borderColor = Colors.blue.shade700;
     } else if (isVipSeat && seat.status == SeatStatus.available) {
-      borderColor = Colors.amber.shade600;
+      borderColor = vipBorderColor ?? Colors.amber.shade600;
     } else if (seatColor == Colors.white) {
       borderColor = Colors.grey.shade300;
     } else {

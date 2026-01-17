@@ -261,8 +261,7 @@ class SeatMapWidget extends StatelessWidget {
       );
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+    return Center(
       child: SingleChildScrollView(
         child: seatMap,
       ),

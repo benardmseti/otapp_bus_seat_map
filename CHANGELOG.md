@@ -1,3 +1,7 @@
+## 0.1.5
+
+- **Fixed:** Seat map now centers horizontally on screen
+
 ## 0.1.4
 
 - **Updated example:** Bus example now uses `fromApiResponse()` with accurate Otapp API format

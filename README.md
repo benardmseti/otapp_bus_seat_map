@@ -17,7 +17,7 @@ A flexible bus seat map widget for Flutter. Designed for bus booking apps using 
 
 ```yaml
 dependencies:
-  otapp_bus_seat_map: ^0.1.2
+  otapp_bus_seat_map: ^0.1.5
 ```
 
 Or run:
@@ -27,60 +27,54 @@ flutter pub add otapp_bus_seat_map
 
 ---
 
-## Option 1: Using Otapp Services API
+## Option 1: Using Otapp Services API (Recommended)
 
-If you're using the Otapp Services API, the seat map response works directly with this package.
-
-### API Response Format
-
-The Otapp API returns seat data in this format:
-
-```json
-{
-  "lower_seat_map": [
-    {"seat_row1": "L-1-1-1,L-1-1-2,0,L-1-1-3,L-1-1-4"},
-    {"seat_row2": "L-1-2-5,L-1-2-6,0,L-1-2-7,L-1-2-8"},
-    {"seat_row3": "@,0,0,L-1-3-9,L-1-3-10"},
-    {"seat_row4": "*,0,0,L-1-4-11,L-1-4-12"}
-  ],
-  "available_seats": "L-1-1-1,L-1-1-2,L-1-1-3,L-1-2-5,L-1-2-7",
-  "process_seats": "L-1-2-8",
-  "is_right_hand_drive": 1,
-  "seat_types": [
-    {"seat_type_name": "VIP", "seats": "L-1-1-1,L-1-1-2", "fare": [{"fare": "35000"}]},
-    {"seat_type_name": "Standard", "seats": "L-1-1-3,L-1-1-4", "fare": [{"fare": "25000"}]}
-  ]
-}
-```
-
-### Using with Otapp API
+Parse the complete API response in **one line**:
 
 ```dart
 import 'package:otapp_bus_seat_map/otapp_bus_seat_map.dart';
 
-// Parse directly from API response
-final layout = SeatLayout.fromJson(
-  apiResponse['lower_seat_map'],
-  config: SeatLayoutConfig.bus(),
-);
-
-// Apply seat statuses from API
-final layoutWithStatus = SeatLayout.fromCsvRowsWithStatus(
-  layout.rawRows,
-  config: SeatLayoutConfig.bus(),
-  availableSeats: apiResponse['available_seats'],
-  bookedSeats: apiResponse['booked_seats'] ?? '',
-  processingSeats: apiResponse['process_seats'] ?? '',
-);
+// Parse entire API response - handles everything automatically!
+final layout = SeatLayout.fromApiResponse(apiResponse);
 
 // Use the widget
 SeatMapWidget(
-  layout: layoutWithStatus,
+  layout: layout,
   selectedSeats: selectedSeats,
-  onSeatTap: (seat) {
-    // Handle seat selection
-  },
+  onSeatTap: (seat) => handleSelection(seat),
 )
+```
+
+### What `fromApiResponse` handles automatically:
+- Parses `lower_seat_map` CSV structure
+- Applies seat statuses from `available_seats`, `process_seats`, `reserve_hold_seats`
+- Maps VIP categories and fares from `seat_types`
+- Uses outer `fare` for normal seats
+- Adds driver row based on `is_right_hand_drive`
+- Seats not in `available_seats` are marked as booked
+
+### API Response Format
+
+```json
+{
+  "lower_seat_map": [
+    {"SeatRow1": "L-0-0-01,0,0,L-0-3-05,L-0-4-04"},
+    {"SeatRow2": "L-1-0-02,0,0,L-1-3-07,L-1-4-06"},
+    {"SeatRow3": "*,0,0,L-2-3-09,L-2-4-08"},
+    {"SeatRow4": "@,0,0,L-3-3-11,L-3-4-10"}
+  ],
+  "available_seats": "L-0-0-01,L-0-4-04,L-1-0-02,L-1-3-07",
+  "process_seats": "L-2-3-09",
+  "seat_types": [
+    {
+      "seat_type_name": "V.V.I.P",
+      "seats": "L-0-0-01,L-0-3-05,L-0-4-04",
+      "fare": [{"currency": "TSH", "fare": "40,000.00"}]
+    }
+  ],
+  "fare": [{"currency": "TSH", "fare": "25,000.00"}],
+  "is_right_hand_drive": "1"
+}
 ```
 
 ---
@@ -265,6 +259,89 @@ SeatMapController(
     );
   },
 )
+```
+
+---
+
+## Color Customization
+
+Customize all seat colors using `seatBuilder` with `DefaultSeatWidget`:
+
+```dart
+SeatMapWidget(
+  layout: layout,
+  selectedSeats: selectedSeats,
+  onSeatTap: (seat) => handleSelection(seat),
+  seatBuilder: (context, seat, isSelected) {
+    return DefaultSeatWidget(
+      seat: seat,
+      isSelected: isSelected,
+      size: 50,
+      onTap: () => handleSelection(seat),
+      // Customize ALL colors
+      availableColor: Colors.green.shade100,
+      selectedColor: Colors.purple,
+      bookedColor: Colors.red.shade300,
+      processingColor: Colors.orange,
+      blockedColor: Colors.black54,
+      // VIP-specific colors
+      vipAvailableColor: Colors.amber.shade200,
+      vipBorderColor: Colors.amber.shade700,
+    );
+  },
+)
+```
+
+### DefaultSeatWidget Color Options
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `availableColor` | `Colors.white` | Available seat background |
+| `selectedColor` | `Colors.blue.shade600` | Selected seat background |
+| `bookedColor` | `Colors.grey.shade400` | Booked seat background |
+| `processingColor` | `Colors.orange.shade400` | Processing seat background |
+| `blockedColor` | `Colors.grey.shade600` | Blocked seat background |
+| `vipAvailableColor` | `Colors.amber.shade100` | VIP available seat background |
+| `vipBorderColor` | `Colors.amber.shade600` | VIP seat border color |
+
+---
+
+## Legend (Build Your Own)
+
+The package does **not** include a legend widget - you build your own to match your app's design:
+
+```dart
+Widget buildLegend() {
+  return Wrap(
+    spacing: 16,
+    children: [
+      _legendItem(Colors.white, 'Available', border: Colors.grey.shade300),
+      _legendItem(Colors.amber.shade100, 'VIP', border: Colors.amber.shade600),
+      _legendItem(Colors.blue.shade600, 'Selected'),
+      _legendItem(Colors.grey.shade400, 'Booked'),
+      _legendItem(Colors.orange.shade400, 'Processing'),
+    ],
+  );
+}
+
+Widget _legendItem(Color color, String label, {Color? border}) {
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: border ?? Colors.transparent),
+        ),
+      ),
+      const SizedBox(width: 4),
+      Text(label),
+    ],
+  );
+}
 ```
 
 ---
