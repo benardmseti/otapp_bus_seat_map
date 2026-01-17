@@ -45,15 +45,21 @@ class DefaultSeatWidget extends StatelessWidget {
       return selectedColor ?? Colors.blue.shade600;
     }
 
+    final isVipSeat = _isVip() || _isVvip();
+
     switch (seat.status) {
       case SeatStatus.available:
+        // VIP seats get a distinct color when available
+        if (isVipSeat) {
+          return availableColor ?? Colors.amber.shade100;
+        }
         return availableColor ?? Colors.white;
       case SeatStatus.booked:
         return bookedColor ?? Colors.grey.shade400;
       case SeatStatus.selected:
         return selectedColor ?? Colors.blue.shade600;
       case SeatStatus.processing:
-        return processingColor ?? Colors.orange.shade300;
+        return processingColor ?? Colors.orange.shade400;
       case SeatStatus.blocked:
         return blockedColor ?? Colors.grey.shade600;
     }
@@ -88,6 +94,19 @@ class DefaultSeatWidget extends StatelessWidget {
     final textColor = _getTextColor(context);
     final isVip = _isVip();
     final isVvip = _isVvip();
+    final isVipSeat = isVip || isVvip;
+
+    // Determine border color
+    Color borderColor;
+    if (isSelected) {
+      borderColor = Colors.blue.shade700;
+    } else if (isVipSeat && seat.status == SeatStatus.available) {
+      borderColor = Colors.amber.shade600;
+    } else if (seatColor == Colors.white) {
+      borderColor = Colors.grey.shade300;
+    } else {
+      borderColor = Colors.transparent;
+    }
 
     return GestureDetector(
       onTap: seat.isSelectable ? onTap : null,
@@ -98,10 +117,8 @@ class DefaultSeatWidget extends StatelessWidget {
           color: seatColor,
           borderRadius: BorderRadius.circular(borderRadius),
           border: Border.all(
-            color: seatColor == Colors.white
-                ? Colors.grey.shade300
-                : Colors.transparent,
-            width: 1,
+            color: borderColor,
+            width: isVipSeat ? 2 : 1,
           ),
           boxShadow: isSelected
               ? [

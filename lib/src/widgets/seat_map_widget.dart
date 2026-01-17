@@ -119,32 +119,39 @@ class SeatMapWidget extends StatelessWidget {
   Widget _buildElement(BuildContext context, SeatElement element) {
     final isSelected = _isSelected(element);
 
+    // Wrap ALL elements in a fixed-size container for perfect grid alignment
+    Widget child;
+
     switch (element.type) {
       case SeatElementType.seat:
         if (seatBuilder != null) {
-          return seatBuilder!(context, element, isSelected);
+          child = seatBuilder!(context, element, isSelected);
+        } else {
+          child = DefaultSeatWidget(
+            seat: element,
+            isSelected: isSelected,
+            size: seatSize,
+            onTap: onSeatTap != null ? () => onSeatTap!(element) : null,
+          );
         }
-        return DefaultSeatWidget(
-          seat: element,
-          isSelected: isSelected,
-          size: seatSize,
-          onTap: onSeatTap != null ? () => onSeatTap!(element) : null,
-        );
+        break;
 
       case SeatElementType.aisle:
         if (aisleBuilder != null) {
-          return aisleBuilder!(context, element);
+          child = aisleBuilder!(context, element);
+        } else {
+          child = DefaultAisleWidget(size: seatSize);
         }
-        return DefaultAisleWidget(size: seatSize);
+        break;
 
       case SeatElementType.empty:
         if (aisleBuilder != null) {
-          return aisleBuilder!(context, element);
+          child = aisleBuilder!(context, element);
+        } else {
+          // Empty space - just a transparent box
+          child = const SizedBox.shrink();
         }
-        return SizedBox(
-          width: seatSize + seatSpacing * 2,
-          height: seatSize,
-        );
+        break;
 
       case SeatElementType.door:
       case SeatElementType.toilet:
@@ -152,13 +159,22 @@ class SeatMapWidget extends StatelessWidget {
       case SeatElementType.driver:
       case SeatElementType.custom:
         if (specialBuilder != null) {
-          return specialBuilder!(context, element);
+          child = specialBuilder!(context, element);
+        } else {
+          child = DefaultSpecialWidget(
+            element: element,
+            size: seatSize,
+          );
         }
-        return DefaultSpecialWidget(
-          element: element,
-          size: seatSize,
-        );
+        break;
     }
+
+    // All elements get the same fixed-size container for perfect grid
+    return SizedBox(
+      width: seatSize,
+      height: seatSize,
+      child: child,
+    );
   }
 
   Widget _buildRow(BuildContext context, int rowIndex, List<SeatElement> row) {

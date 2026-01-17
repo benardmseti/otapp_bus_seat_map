@@ -1,3 +1,11 @@
+## 0.1.3
+
+- **Fixed:** Zigzag layout alignment - all elements now use consistent fixed-size containers
+- **NEW:** VIP/VVIP seats auto-styled with amber background and gold border
+- **NEW:** Star indicators for VIP (★) and VVIP (★★) seats
+- **NEW:** Category labels ("VIP"/"VVIP") displayed on special seats
+- Normal seats use outer `fare` value, VIP seats use `seat_types` fare
+
 ## 0.1.2
 
 - **NEW: `SeatLayout.fromApiResponse()`** - Parse full Otapp API response in one call
