@@ -121,64 +121,54 @@ class _SeatMapDemoState extends State<SeatMapDemo>
   }
 
   Widget _buildBusExample() {
-    // Example bus seat layout (similar to your API format)
-    final busRows = [
-      'L-1-1-1,L-1-1-2,0,L-1-1-3,L-1-1-4',
-      'L-1-2-5,L-1-2-6,0,L-1-2-7,L-1-2-8',
-      '@,0,0,L-1-3-9,L-1-3-10', // Door row
-      'L-1-4-11,L-1-4-12,0,L-1-4-13,L-1-4-14',
-      'L-1-5-15,L-1-5-16,0,L-1-5-17,L-1-5-18',
-      '*,0,0,L-1-6-19,L-1-6-20', // Toilet row
-      'L-1-7-21,L-1-7-22,0,L-1-7-23,L-1-7-24',
-      'L-1-8-25,L-1-8-26,0,L-1-8-27,L-1-8-28',
-      'L-1-9-29,L-1-9-30,L-1-9-31,L-1-9-32,L-1-9-33', // Back row (5 seats)
-    ];
+    // Exact Otapp Services API response format
+    final apiResponse = {
+      "status": 200,
+      "lower_seat_map": [
+        {"SeatRow1": "L-0-0-01,0,0,L-0-3-05,L-0-4-04"},
+        {"SeatRow2": "L-1-0-02,0,0,L-1-3-07,L-1-4-06"},
+        {"SeatRow3": "L-2-0-03,0,0,L-2-3-09,L-2-4-08"},
+        {"SeatRow4": "0,0,0,L-3-3-11,L-3-4-10"},
+        {"SeatRow5": "*,0,0,L-4-3-13,L-4-4-12"},
+        {"SeatRow6": "@,0,0,L-5-3-15,L-5-4-14"},
+        {"SeatRow7": "L-6-0-16,L-6-1-17,0,L-6-3-19,L-6-4-18"},
+        {"SeatRow8": "L-7-0-20,L-7-1-21,0,L-7-3-23,L-7-4-22"},
+        {"SeatRow9": "L-8-0-24,L-8-1-25,0,L-8-3-27,L-8-4-26"},
+        {"SeatRow10": "L-9-0-28,L-9-1-29,0,L-9-3-31,L-9-4-30"},
+        {"SeatRow11": "L-10-0-32,L-10-1-33,0,L-10-3-35,L-10-4-34"},
+        {"SeatRow12": "L-11-0-36,L-11-1-37,0,L-11-3-39,L-11-4-38"},
+        {"SeatRow13": "L-12-0-43,L-12-1-42,L-12-2-44,L-12-3-41,L-12-4-40"}
+      ],
+      "process_seats": "L-8-3-27,L-8-4-26",
+      "available_seats":
+          "L-0-0-01,L-0-4-04,L-1-0-02,L-1-3-07,L-1-4-06,L-2-0-03,L-2-3-09,L-2-4-08,L-5-3-15,L-8-1-25,L-8-3-27,L-8-4-26,L-9-0-28,L-9-1-29,L-9-3-31,L-9-4-30,L-10-0-32,L-10-1-33,L-10-3-35,L-10-4-34,L-11-0-36,L-11-1-37,L-11-3-39,L-11-4-38,L-12-0-43,L-12-1-42,L-12-2-44,L-12-3-41,L-12-4-40",
+      "seat_types": [
+        {
+          "seat_type_id": "315",
+          "seat_type_name": "V.V.I.P",
+          "seats":
+              "L-0-0-01,L-0-3-05,L-0-4-04,L-1-0-02,L-1-3-07,L-1-4-06,L-2-0-03,L-2-3-09,L-2-4-08",
+          "fare": [
+            {"currency": "TSH", "fare": "40,000.00"}
+          ]
+        }
+      ],
+      "fare": [
+        {"currency": "TSH", "fare": "25,000.00"}
+      ],
+      "reserve_hold_seats": "",
+      "is_right_hand_drive": "1"
+    };
 
-    // Simulated seat statuses (from API)
-    final availableSeats =
-        'L-1-1-1,L-1-1-2,L-1-1-3,L-1-2-5,L-1-2-7,L-1-2-8,L-1-3-9,L-1-4-11,L-1-4-12,L-1-4-13,L-1-5-15,L-1-5-16,L-1-5-17,L-1-6-19,L-1-7-21,L-1-7-22,L-1-7-23,L-1-8-25,L-1-8-26,L-1-9-29,L-1-9-30,L-1-9-31';
-    final bookedSeats = 'L-1-1-4,L-1-2-6,L-1-3-10,L-1-4-14,L-1-5-18,L-1-6-20';
-    final processingSeats = 'L-1-7-24,L-1-8-27,L-1-8-28,L-1-9-32,L-1-9-33';
-
-    // VIP seats
-    final vipSeats = {'L-1-1-1', 'L-1-1-2', 'L-1-1-3', 'L-1-1-4'};
-
-    final layout = SeatLayout.fromCsvRowsWithStatus(
-      busRows,
-      config: SeatLayoutConfig.bus(
-        defaultPrice: 25000,
-        categoryResolver: (code, metadata) {
-          if (vipSeats.contains(code)) return 'VIP';
-          return 'Standard';
-        },
-        priceResolver: (code, category, metadata) {
-          if (category == 'VIP') return 35000;
-          return 25000;
-        },
-      ),
-      availableSeats: availableSeats,
-      bookedSeats: bookedSeats,
-      processingSeats: processingSeats,
-    );
+    // Parse with one line - handles everything automatically!
+    final layout = SeatLayout.fromApiResponse(apiResponse);
 
     return Column(
       children: [
-        // Driver section
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              const DriverWidget(size: 50),
-              const SizedBox(width: 8),
-            ],
-          ),
-        ),
+        // Legend with VIP
+        _buildBusLegend(),
 
-        // Legend
-        _buildLegend(),
-
-        // Seat map
+        // Seat map - Driver row is auto-added based on is_right_hand_drive
         Expanded(
           child: SeatMapWidget(
             layout: layout,
@@ -189,6 +179,43 @@ class _SeatMapDemoState extends State<SeatMapDemo>
             rowSpacing: 4,
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildBusLegend() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 8,
+        alignment: WrapAlignment.center,
+        children: [
+          _legendItem(Colors.white, 'Available'),
+          _legendItemVip(Colors.amber.shade100, 'VIP', Colors.amber.shade600),
+          _legendItem(Colors.blue.shade600, 'Selected'),
+          _legendItem(Colors.grey.shade400, 'Booked'),
+          _legendItem(Colors.orange.shade400, 'Processing'),
+        ],
+      ),
+    );
+  }
+
+  Widget _legendItemVip(Color color, String label, Color border) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: border, width: 2),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 12)),
       ],
     );
   }

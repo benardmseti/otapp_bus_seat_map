@@ -1,3 +1,9 @@
+## 0.1.4
+
+- **Updated example:** Bus example now uses `fromApiResponse()` with accurate Otapp API format
+- Example shows VIP seats with proper pricing (40,000 TSH) and normal seats using outer fare (25,000 TSH)
+- Added VIP legend styling in example
+
 ## 0.1.3
 
 - **Fixed:** Zigzag layout alignment - all elements now use consistent fixed-size containers
